@@ -1,25 +1,16 @@
 package in.anshdevs;
 
-import jakarta.inject.Singleton;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+import io.quarkus.runtime.Quarkus;
+import io.quarkus.runtime.annotations.QuarkusMain;
 
-import java.util.HashMap;
-
-@Path("/")
+@QuarkusMain
 public class Core {
+    public static void main(String[] args) {
+        // runs the application until it receives termination signal.
+        Quarkus.run(args);
+        // listen for termination signal from the os.
+        // helps in graceful shutdown of the service when stopped from containerized env. i.e docker .
 
-
-    @Singleton
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response hello() {
-        HashMap<String, Object> res = new HashMap<>(){{
-                put("message", "PRICE SURGE");
-        }};
-        return Response.status(Response.Status.OK).entity(res).build();
+        Quarkus.waitForExit();
     }
 }
