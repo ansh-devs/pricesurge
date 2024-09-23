@@ -1,4 +1,4 @@
-package in.anshdevs.users;
+package in.anshdevs.shared;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

@@ -10,7 +10,6 @@ public class Core {
         Quarkus.run(args);
         // listen for termination signal from the os.
         // helps in graceful shutdown of the service when stopped from containerized env. i.e docker .
-
         Quarkus.waitForExit();
     }
 }
