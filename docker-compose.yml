@@ -1,0 +1,101 @@
+name: "pricesurge-stack"
+
+services:
+  postgres:
+    image: postgres:latest
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=pguser
+      - POSTGRES_PASSWORD=pgpass
+      - POSTGRES_DB=postgres
+    volumes:
+      - ./pg_data:/var/lib/postgresql/data
+    networks:
+      - pricesurge
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - 2181:2181
+    networks:
+      - pricesurge
+
+  kafka:
+    image: confluentinc/cp-enterprise-kafka:latest
+    depends_on: [zookeeper]
+    environment:
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_BROKER_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_JMX_PORT: 9991
+    ports:
+      - 9092:9092
+    networks:
+      - pricesurge
+
+  debezium:
+    image: debezium/connect:latest
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: connect_configs
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    depends_on: [kafka]
+    ports:
+      - 8083:8083
+    networks:
+      - pricesurge
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:latest
+    environment:
+      - SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL=zookeeper:2181
+      - SCHEMA_REGISTRY_HOST_NAME=schema-registry
+      - SCHEMA_REGISTRY_LISTENERS=http://schema-registry:8081,http://localhost:8081
+      - SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://kafka:9092
+    ports:
+      - 8081:8081
+    depends_on: [zookeeper, kafka]
+    networks:
+      - pricesurge
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8084:8080
+    networks:
+      - pricesurge
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - 8085:8080
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    networks:
+      - pricesurge
+
+  kafka-ui2:
+    container_name: kafka-ui2
+    image: docker.redpanda.com/redpandadata/console:latest
+    ports:
+      - 8086:8080
+    environment:
+      KAFKA_BROKERS=: 'kafka'
+    networks:
+      - pricesurge
+
+networks:
+  pricesurge:
+    driver: bridge
